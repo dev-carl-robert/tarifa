@@ -56,6 +56,10 @@ def extrair_infos_pdf(caminho_pdf):
 
     # → Busca por tarifas
     for i in range(len(linhas) - 1):
+        # Ignorar linhas que contêm a palavra "total"
+        if "total" in linhas[i].lower():
+            continue
+
         if re.search(r'\d{2}/\d{2}/\d{4}', linhas[i]):
             data_count += 1
             if data_count == 4:
@@ -64,25 +68,27 @@ def extrair_infos_pdf(caminho_pdf):
         linha_atual = linhas[i]
         linha_proxima = linhas[i + 1] if i + 1 < len(linhas) else ""
 
+        # Armazenar apenas o primeiro número negativo encontrado na linha atual
         if ("TARIFA" in linha_atual or "DOC/TED INTERNET" in linha_atual) and \
-           ("TARIFA OPERACAO" not in linha_atual and "DOC/TED INTERNET" not in linha_proxima):
+        ("TARIFA OPERACAO" not in linha_atual and "DOC/TED INTERNET" not in linha_proxima):
             if linha_proxima not in linhas_processadas:
+                # Encontrar o primeiro número negativo
                 valores = re.findall(r'-\d+,\d+', linha_proxima)
-                for val in valores:
-                    num = float(val.replace(',', '.'))
-                    valor_tarifa_total += num * -1
-                    tarifas_detalhadas.append((linha_proxima, num * -1))
+                if valores:  # Verifica se há valores encontrados
+                    primeiro_valor_negativo = float(valores[0].replace(',', '.'))  # Armazena apenas o primeiro
+                    valor_tarifa_total += primeiro_valor_negativo * -1
+                    tarifas_detalhadas.append((linha_proxima, primeiro_valor_negativo * -1))
                     linhas_processadas.add(linha_proxima)
 
         if any(x in linha_atual for x in ["ENCARGOS DESCOBERTO", "TAR ", "TARIFA OPERACAO"]):
             if linha_atual not in linhas_processadas:
                 match = re.search(r'-\d+,\d+', linha_atual)
                 if match:
-                    num = float(match.group().replace(',', '.'))
-                    valor_tarifa_total += num * -1
-                    tarifas_detalhadas.append((linha_atual, num * -1))
+                    primeiro_valor_negativo = float(match.group().replace(',', '.'))  # Armazena apenas o primeiro
+                    valor_tarifa_total += primeiro_valor_negativo * -1
+                    tarifas_detalhadas.append((linha_atual, primeiro_valor_negativo * -1))
                     linhas_processadas.add(linha_atual)
-
+                    
     # → Encontrar data de lançamento
     datas = re.findall(r'\b\d{2}/\d{2}/\d{4}\b', texto)
     data_lancamento = datas[2] if len(datas) >= 2 else "Data não encontrada"
@@ -141,8 +147,18 @@ def process_pdfs(email, password, folder_path):
         return
 
     for pdf_file in pdf_files:
-        print("Executando código para:", pdf_file)
-        dados = extrair_infos_pdf(pdf_file)
+        dados = extrair_infos_pdf(pdf_file)  # Corrigi também o nome da função que você usou
+
+        if dados["conta"] in ["Conta não encontrada", None, ""] or \
+           dados["codigo_filial"] in ["Desconhecido", None, ""] or \
+           dados["valor_tarifa"] == 0.0 or \
+           dados["data_lancamento"] == "Data não encontrada":
+            print(f'Saltando "{os.path.basename(pdf_file)}": dados incompletos.')
+            print("-" * 60)
+            continue  # Alterado de return False para continue para processar o próximo PDF
+
+        print("*" * 60)
+        print(f"Executando {os.path.basename(pdf_file)}")
         print("Conta:", dados["conta"])
         print("Código da Filial:", dados["codigo_filial"])
         print("Banco:", dados["banco"])
@@ -153,15 +169,19 @@ def process_pdfs(email, password, folder_path):
         for linha, valor in dados["tarifas_detalhadas"]:
             print(f"Linha: {linha.strip()}")
             print(f"Valor: R$ {valor:.2f}")
-            print("-" * 60)
         
+        print(f"Total tarifas: {dados['valor_tarifa']}")
+
+        # Mensagem ao final do processamento
+        # Pode continuar seu tratamento aqui
         filial = dados["filial"]
         fornecedor = dados["banco"]
         data_lancamento = dados["data_lancamento"]
         total_tarifas = dados["valor_tarifa"]
         total_formatado = "{:.2f}".format(total_tarifas).replace('.', ',')
         conta = dados["codigo_filial"]
-
+       
+        print("*" * 60)
         servico =  Service(ChromeDriverManager().install())
         navegador = webdriver.Chrome(service=servico)
         
@@ -344,9 +364,11 @@ def process_pdfs(email, password, folder_path):
         pyautogui.press('up')
         navegador.quit()
         time.sleep(4)
+        navegador.quit()
+        time.sleep(4)
         print(f'"{os.path.basename(pdf_file)}" lançado com sucesso.')
 
-
+    print("Todos os PDFs executados.")
 def browse_folder():
     folder_path = filedialog.askdirectory()
     if folder_path:
