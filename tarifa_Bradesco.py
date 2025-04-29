@@ -153,7 +153,7 @@ def process_pdfs(email, password, folder_path):
            dados["codigo_filial"] in ["Desconhecido", None, ""] or \
            dados["valor_tarifa"] == 0.0 or \
            dados["data_lancamento"] == "Data não encontrada":
-            print(f'Saltando "{os.path.basename(pdf_file)}": dados incompletos.')
+            print(f'erro no: "{os.path.basename(pdf_file)}": PDF EXTRAÍDO INCORRETAMENTE.')
             print("-" * 60)
             continue  # Alterado de return False para continue para processar o próximo PDF
 
@@ -190,14 +190,16 @@ def process_pdfs(email, password, folder_path):
 
         navegador.get("https://webtrans.saas.gwsistemas.com.br/")
         navegador.find_element(By.XPATH, '//*[@id="login"]').send_keys(email)
+        time.sleep(3)
         navegador.find_element(By.XPATH, '//*[@id="senha"]').send_keys(password)
+        time.sleep(3)
         navegador.find_element(By.XPATH, '//*[@id="form_login"]/div[3]/div/button').click()
         time.sleep(3)
 
         navegador.get("https://webtrans.saas.gwsistemas.com.br/consultadespesa?acao=iniciar")
         time.sleep(3)
         navegador.find_element(By.XPATH, '//*[@id="novo"]').click()
-        time.sleep(3)
+        time.sleep()
         navegador.find_element(By.XPATH, '//*[@id="especie"]').send_keys("FIN")
 
         navegador.find_element(By.XPATH, '//*[@id="localiza_filial"]').click()
@@ -206,7 +208,7 @@ def process_pdfs(email, password, folder_path):
         time.sleep(3)
         pyautogui.press("enter")
         time.sleep(4)
-        pyautogui.click(289,439)
+        pyautogui.click(226, 347)
         time.sleep(8)
 
 
@@ -218,7 +220,7 @@ def process_pdfs(email, password, folder_path):
         pyautogui.press("enter")
         time.sleep(10)
         
-        pyautogui.click(289,439)
+        pyautogui.click(226, 347)
         time.sleep(5)
 
         navegador.find_element(By.XPATH, '//*[@id="descricao_historico"]').send_keys("TARIFA BANCARIA")
@@ -263,7 +265,7 @@ def process_pdfs(email, password, folder_path):
         pyautogui.press("enter")
         time.sleep(10)
         
-        pyautogui.click(289,439)
+        pyautogui.click(226, 347)
         time.sleep(4)
 
         navegador.find_element(By.XPATH, '//*[@id="botaoAddUnidadeCusto_1"]').click()
@@ -272,7 +274,7 @@ def process_pdfs(email, password, folder_path):
         pyautogui.press("enter")
         time.sleep(10)
         
-        pyautogui.click(289,439)
+        pyautogui.click(226, 347)
 
         navegador.find_element(By.XPATH, '//*[@id="salvar"]').click()
         time.sleep(10)
@@ -300,7 +302,7 @@ def process_pdfs(email, password, folder_path):
 
         time.sleep(10)
         
-        pyautogui.click(289,439)
+        pyautogui.click(226, 347)
 
         navegador.find_element(By.XPATH, '//*[@id="idfilial"]').click()
         pyautogui.write(filial)
